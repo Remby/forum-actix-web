@@ -133,8 +133,54 @@
         v-if="!isFullScreen"
         class="bg-gray-100 w-20 md:w-64 py-4 px-2 md:px-6 overflow-y-auto scrollbar-hide hidden md:block"
       >
+        <el-input
+          v-model="searchQuery"
+          placeholder="搜索联系人"
+          @input="searchContacts"
+          class="w-full mb-4"
+        ></el-input>
+
+        <ul v-if="searchResults.length > 0">
+          <li
+            v-for="user in searchResults"
+            :key="user.username"
+            class="flex items-center mb-4 p-2 border rounded-lg bg-white shadow-sm"
+          >
+            <el-avatar :src="user.avatar" size="default" class="mr-3"></el-avatar>
+            <div class="flex-grow">
+              <div class="font-semibold text-l">{{ user.username }}</div>
+              <div class="text-gray-500 text-sm">{{ user.nickname }}</div>
+            </div>
+            <el-button
+              type="primary"
+              @click="addContact(user.username)"
+              class="ml-4" size="default"
+            >
+              添加
+            </el-button>
+          </li>
+        </ul>
+
+        <el-dialog
+          title="添加联系人"
+          v-model="showAddContactDialog"
+          width="30%"
+          :visible.sync="showAddContactDialog"
+        >
+          <el-input
+            v-model="newContactName"
+            placeholder="输入联系人名字"
+          ></el-input>
+          <span slot="footer" class="dialog-footer">
+            <el-button @click="showAddContactDialog = false">取消</el-button>
+            <el-button type="primary" @click="confirmAddContact"
+              >确定</el-button
+            >
+          </span>
+        </el-dialog>
+
         <el-collapse>
-          <el-collapse-item >
+          <el-collapse-item>
             <template #title>
               <el-icon class="mr-1"><User /></el-icon>联系人
             </template>
@@ -178,17 +224,17 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref, computed, onMounted, Component } from "vue";
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
 import {
   ElButton,
   ElInput,
   ElAvatar,
   ElIcon,
   ElDialog,
+  ElMessage,
   ElCollapse,
   ElCollapseItem,
-  ElMessage,
   ElNotification,
 } from "element-plus";
 import {
@@ -217,125 +263,130 @@ interface Post {
   likes: number;
 }
 
-export default defineComponent({
-  name: "Home",
-  components: {
-    ElButton,
-    ElInput,
-    ElAvatar,
-    ElIcon,
-    ElDialog,
-    ElCollapse,
-    ElCollapseItem,
-    User,
-    ChatDotSquare,
-    Setting,
-    Open,
-    TurnOff,
-    Star,
-    CreatePost,
-    SquareView,
-    FriendsView,
-    AppsView,
-    SettingsView,
-  },
-  setup() {
-    const showCreatePostDialog = ref(false);
-    const posts = ref<Post[]>([]);
-    const currentView = ref("SquareView");
-    const isFullScreen = ref(false);
+const showCreatePostDialog = ref(false);
+const posts = ref<Post[]>([]);
+const currentView = ref("SquareView");
+const isFullScreen = ref(false);
 
-    const viewComponents: { [key: string]: Component } = {
-      SquareView,
-      FriendsView,
-      AppsView,
-      SettingsView,
-    };
+const viewComponents = {
+  SquareView,
+  FriendsView,
+  AppsView,
+  SettingsView,
+};
 
-    const currentViewComponent = computed(
-      () => viewComponents[currentView.value]
-    );
+const searchQuery = ref("");
+const searchResults = ref([]);
+const showAddContactDialog = ref(false);
+const newContactName = ref("");
 
-    const setView = (view: string) => {
-      currentView.value = view;
-    };
+const currentViewComponent = computed(
+  () => viewComponents[currentView.value as keyof typeof viewComponents]
+);
 
-    const openCreatePostDialog = () => {
-      showCreatePostDialog.value = true;
-    };
+const setView = (view: string) => {
+  currentView.value = view;
+};
 
-    const closeCreatePostDialog = () => {
-      showCreatePostDialog.value = false;
-    };
+const openCreatePostDialog = () => {
+  showCreatePostDialog.value = true;
+};
 
-    const loadPosts = async () => {
-      try {
-        const response = await axios.get("/posts", {
-          params: { limit: 20 },
-        });
+const closeCreatePostDialog = () => {
+  showCreatePostDialog.value = false;
+};
 
-        response.data.posts.map((post: Post) => {
-          if (post.avatar) {
-            post.avatar = post.avatar.replace("./", `${API_BASE_URL}/`);
-          }
-          if (post.images) {
-            post.images = post.images.map((image) => {
-              return image.replace("./", `${API_BASE_URL}/`);
-            });
-          }
-          return post;
-        });
-        posts.value = response.data.posts;
-      } catch (error) {
-        console.error("Error loading posts:", error);
-      }
-    };
-
-    const loadMorePosts = async () => {
-      try {
-        const response = await axios.get("/posts", {
-          params: { limit: 20, offset: posts.value.length },
-        });
-        posts.value.push(...response.data.posts);
-      } catch (error) {
-        console.error("Error loading more posts:", error);
-      }
-    };
-
-    const toggleFullScreen = () => {
-      isFullScreen.value = !isFullScreen.value;
-      ElNotification({
-        title: isFullScreen.value ? "╭(●｀∀´●)╯" : "╰(●’◡’●)╮",
-        position: "top-left",
-        message: h(
-          "i",
-          { style: "color:teal" },
-          isFullScreen.value
-            ? "您已经关闭了边栏，再次点击打开"
-            : "您已经打开了边栏，再次点击关闭"
-        ),
-
-        duration: 2000,
-      });
-    };
-
-    onMounted(() => {
-      loadPosts();
+const loadPosts = async () => {
+  try {
+    const response = await axios.get("/posts", {
+      params: { limit: 20 },
     });
 
-    return {
-      showCreatePostDialog,
-      openCreatePostDialog,
-      closeCreatePostDialog,
-      posts,
-      loadMorePosts,
-      currentView,
-      setView,
-      currentViewComponent,
-      isFullScreen,
-      toggleFullScreen,
-    };
-  },
+    response.data.posts.map((post: Post) => {
+      if (post.avatar) {
+        post.avatar = post.avatar.replace("./", `${API_BASE_URL}/`);
+      }
+      if (post.images) {
+        post.images = post.images.map((image) => {
+          return image.replace("./", `${API_BASE_URL}/`);
+        });
+      }
+      return post;
+    });
+    posts.value = response.data.posts;
+  } catch (error) {
+    console.error("Error loading posts:", error);
+  }
+};
+
+const loadMorePosts = async () => {
+  try {
+    const response = await axios.get("/posts", {
+      params: { limit: 20, offset: posts.value.length },
+    });
+    posts.value.push(...response.data.posts);
+  } catch (error) {
+    console.error("Error loading more posts:", error);
+  }
+};
+
+const toggleFullScreen = () => {
+  isFullScreen.value = !isFullScreen.value;
+  ElNotification({
+    title: isFullScreen.value ? "╭(●｀∀´●)╯" : "╰(●’◡’●)╮",
+    position: "top-left",
+    message: h(
+      "i",
+      { style: "color:teal" },
+      isFullScreen.value
+        ? "您已经关闭了边栏，再次点击打开"
+        : "您已经打开了边栏，再次点击关闭"
+    ),
+
+    duration: 2000,
+  });
+};
+
+const searchContacts = async () => {
+  try {
+    const response = await axios.get(`/search/users`, {
+      params: { username: searchQuery.value },
+    });
+    if (response.data) {
+      response.data.map(
+        (info: any) =>
+          (info.avatar = info.avatar.replace("./", `${API_BASE_URL}/`))
+      );
+    }
+    searchResults.value = response.data;
+    console.log(response.data);
+  } catch (error) {
+    ElMessage.error("搜索失败，请稍后再试");
+    console.error(error);
+  }
+};
+
+const addContact = async (contactId: number) => {
+  try {
+    const response = await axios.post("/contacts", { contactId });
+    if (response.data.success) {
+      ElMessage.success("联系人添加成功");
+      // 这里可以刷新联系人列表或者做其他处理
+    } else {
+      ElMessage.error("添加联系人失败");
+    }
+  } catch (error) {
+    ElMessage.error("添加联系人失败，请稍后再试");
+    console.error(error);
+  }
+};
+
+const confirmAddContact = async () => {
+  // 确认添加联系人逻辑
+};
+
+onMounted(() => {
+  loadPosts();
 });
 </script>
 

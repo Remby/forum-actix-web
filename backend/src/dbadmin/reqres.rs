@@ -98,3 +98,7 @@ pub struct ArticlesResponse{
     pub content:String,
     pub created_at: Option<DateTime<Utc>>
 }
+#[derive(Deserialize)]
+pub struct SearchUserRequest{
+    pub username:String
+}

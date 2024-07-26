@@ -4,6 +4,7 @@ import Login from '@/views/Login.vue';
 import Register from '@/views/Register.vue';
 import  UserProfile from '@/views/UserProfile.vue';
 import MarkdownEditor from '@/components/MarkdownEditor.vue';
+import Chat from '@/components/Chat.vue';
 import Markdown from '@/views/Markdown.vue';
 import axios from '@/axiosConfig';
 // import Three from '@/views/Three.vue'
@@ -38,6 +39,11 @@ const routes = [
     path: '/markdown',
     name: 'Markdown',
     component: Markdown,
+  },
+    {
+    path: '/chat',
+    name: 'Chat',
+    component: Chat,
   }
   //   {
   //   path: '/three',
