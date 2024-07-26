@@ -1,4 +1,4 @@
--- migrate
+-- Add up migration script here
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
@@ -11,6 +11,3 @@ CREATE TABLE users (
     bio TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
-
---revert
-DROP TABLE users;

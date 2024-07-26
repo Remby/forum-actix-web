@@ -1,4 +1,4 @@
--- migrate
+-- Add up migration script here
 CREATE TABLE comments (
     id SERIAL PRIMARY KEY,
     post_id INT NOT NULL,
@@ -10,6 +10,3 @@ CREATE TABLE comments (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (parent_comment_id) REFERENCES comments(id) ON DELETE CASCADE
 );
-
--- revert
-DROP TABLE comments;
