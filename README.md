@@ -4,6 +4,9 @@
 
 ## 示例图片
 
-！[homepage example](https://github.com/Remby/forum-actix-web/raw/main/readme/home1.png)
+<img src="https://github.com/Remby/forum-actix-web/raw/main/readme/home1.png
+" alt="example homepage1" title="GitHub,Social Coding" width="80%" />
 
-！[homepage example](https://github.com/Remby/forum-actix-web/raw/main/readme/home2.png)
+<img src="https://github.com/Remby/forum-actix-web/raw/main/readme/home2.png
+" alt="example homepage2" title="GitHub,Social Coding" width="80%" />
+
