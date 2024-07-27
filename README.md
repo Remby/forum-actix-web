@@ -4,6 +4,6 @@
 
 ## 示例图片
 
-！[homepage example1](./readme/home1.png)
+![homepage example1](./readme/home1.png)
 
-！[homepage example2](./readme/home2.png)
+![homepage example2](./readme/home2.png)
