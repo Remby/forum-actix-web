@@ -4,6 +4,6 @@
 
 ## 示例图片
 
-！[homepage example](/readme/home1.png)
+！[homepage example](https://github.com/Remby/forum-actix-web/raw/main/readme/home1.png)
 
-！[homepage example](/readme/home2.png)
+！[homepage example](https://github.com/Remby/forum-actix-web/raw/main/readme/home2.png)
