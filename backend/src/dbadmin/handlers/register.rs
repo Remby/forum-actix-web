@@ -17,9 +17,7 @@ async fn register_user(pool: web::Data<PgPool>, user: web::Json<CreateUser>) -> 
     )
     .fetch_one(pool.get_ref())
     .await;
-    if let Ok(ref a) = result {
-        println!("{:#?}", a);
-    }
+
     match result {
         Ok(_) => HttpResponse::Ok().json(json!({"success": true})),
         Err(_) => HttpResponse::InternalServerError().finish(),

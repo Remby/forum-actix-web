@@ -45,6 +45,7 @@ pub struct PostResponse {
     pub title: String,
     pub content: String,
     pub images: Option<Vec<String>>,
+    pub created_at:Option<DateTime<Utc>>
 }
 
 #[derive(Deserialize)]

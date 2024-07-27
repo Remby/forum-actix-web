@@ -104,6 +104,10 @@ async fn main() -> std::io::Result<()> {
             .service(get_my_articles)
             .service(chat_route)
             .service(get_search_users)
+            .service(add_users)
+            .service(get_friends_requests)
+            .service(accept_friends_requests)
+            .service(get_friends_list)
     })
     .bind("127.0.0.1:8080")?
     .run()

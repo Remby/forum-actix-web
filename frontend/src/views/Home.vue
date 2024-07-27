@@ -146,7 +146,11 @@
             :key="user.username"
             class="flex items-center mb-4 p-2 border rounded-lg bg-white shadow-sm"
           >
-            <el-avatar :src="user.avatar" size="default" class="mr-3"></el-avatar>
+            <el-avatar
+              :src="user.avatar"
+              size="default"
+              class="mr-3"
+            ></el-avatar>
             <div class="flex-grow">
               <div class="font-semibold text-l">{{ user.username }}</div>
               <div class="text-gray-500 text-sm">{{ user.nickname }}</div>
@@ -154,43 +158,92 @@
             <el-button
               type="primary"
               @click="addContact(user.username)"
-              class="ml-4" size="default"
+              class="ml-4"
+              size="default"
             >
               添加
             </el-button>
           </li>
         </ul>
 
-        <el-dialog
-          title="添加联系人"
-          v-model="showAddContactDialog"
-          width="30%"
-          :visible.sync="showAddContactDialog"
-        >
-          <el-input
-            v-model="newContactName"
-            placeholder="输入联系人名字"
-          ></el-input>
-          <span slot="footer" class="dialog-footer">
-            <el-button @click="showAddContactDialog = false">取消</el-button>
-            <el-button type="primary" @click="confirmAddContact"
-              >确定</el-button
-            >
-          </span>
-        </el-dialog>
-
+        <!-- 好友申请列表 -->
+        <el-collapse>
+          <el-collapse-item >
+            <template #title>
+            <el-icon class=" mx-3"><InfoFilled /></el-icon>好友申请列表
+            </template>
+            <ul>
+              <li
+                v-for="request in friendRequests"
+                :key="request.username"
+                class="flex items-center mb-4 p-2 border rounded-lg bg-white shadow-sm"
+              >
+                <el-avatar
+                  :src="request.avatar"
+                  size="small"
+                  class="mr-3"
+                ></el-avatar>
+                <div class="flex-grow">
+                  <div class="font-semibold text-l">{{ request.username }}</div>
+                  <div class="text-gray-500 text-sm">
+                    {{ request.nickname }}
+                  </div>
+                </div>
+                <div class="flex space-x-2">
+                  <el-button
+                    type="primary"
+                    @click="acceptRequest(request)"
+                    size="small"
+                    class="ml-4"
+                    circle
+                  >
+                    <el-icon><Check /></el-icon>
+                  </el-button>
+                  <el-button
+                    type="danger"
+                    @click="rejectRequest(request)"
+                    size="small"
+                    circle
+                  >
+                    <el-icon><Close /></el-icon>
+                  </el-button>
+                </div>
+              </li>
+            </ul>
+          </el-collapse-item>
+        </el-collapse>
         <el-collapse>
           <el-collapse-item>
             <template #title>
-              <el-icon class="mr-1"><User /></el-icon>联系人
+              <el-icon class="mx-3"><User /></el-icon>我的好友
             </template>
             <ul>
-              <li class="mb-4 flex items-center">
+              <li
+                v-for="friend in friendsList"
+                :key="friend.username"
+                class="flex items-center mb-4 p-2 border rounded-lg bg-white shadow-sm"
+              >
                 <el-avatar
-                  src="https://example.com/contact1.jpg"
+                  :src="friend.avatar"
                   size="small"
+                  class="mr-3"
                 ></el-avatar>
-                <span class="ml-2 text-xs md:text-base">联系人1</span>
+                <div class="flex-grow">
+                  <div class="font-semibold text-l">{{ friend.username }}</div>
+                  <div class="text-gray-500 text-sm">
+                    {{ friend.nickname }}
+                  </div>
+                </div>
+                <div class="flex space-x-2">
+                  <el-button
+                    type="primary"
+                    @click="sendFriendMessages(friend.username)"
+                    size="small"
+                    class="ml-4"
+                  >
+                    <el-icon><ChatDotRound /></el-icon>
+                  </el-button>
+                </div>
               </li>
             </ul>
           </el-collapse-item>
@@ -244,6 +297,10 @@ import {
   Setting,
   Open,
   TurnOff,
+  Check,
+  Close,
+  ChatDotRound,
+  InfoFilled,
 } from "@element-plus/icons-vue";
 import SquareView from "@/components/SquareView.vue";
 import FriendsView from "@/components/FriendsView.vue";
@@ -261,8 +318,14 @@ interface Post {
   content: string;
   images?: string[];
   likes: number;
+  created_at:string;
 }
 
+interface FridendsRequest {
+  username: string;
+  nickname: string;
+  avatar: string;
+}
 const showCreatePostDialog = ref(false);
 const posts = ref<Post[]>([]);
 const currentView = ref("SquareView");
@@ -276,10 +339,9 @@ const viewComponents = {
 };
 
 const searchQuery = ref("");
-const searchResults = ref([]);
-const showAddContactDialog = ref(false);
-const newContactName = ref("");
+const searchResults = ref<FridendsRequest[]>([]);
 
+const friendsList = ref<FridendsRequest[]>([]);
 const currentViewComponent = computed(
   () => viewComponents[currentView.value as keyof typeof viewComponents]
 );
@@ -366,9 +428,10 @@ const searchContacts = async () => {
   }
 };
 
-const addContact = async (contactId: number) => {
+const addContact = async (username: string) => {
   try {
-    const response = await axios.post("/contacts", { contactId });
+    const response = await axios.post("/add-users", username);
+    console.log(response.data);
     if (response.data.success) {
       ElMessage.success("联系人添加成功");
       // 这里可以刷新联系人列表或者做其他处理
@@ -381,12 +444,60 @@ const addContact = async (contactId: number) => {
   }
 };
 
-const confirmAddContact = async () => {
-  // 确认添加联系人逻辑
+const friendRequests = ref<FridendsRequest[]>([]);
+
+const acceptRequest = async (request: FridendsRequest) => {
+  const response = await axios.post(
+    "/accept-friends-requests",
+    request.username
+  );
+  console.log(response.data);
+  if (response.data.success) {
+    friendRequests.value = friendRequests.value.filter(
+      (req) => req.username !== request.username
+    );
+    friendsList.value.push(request);
+  }
 };
+
+const getFriendsRequests = async () => {
+  const response = await axios.get("/get-friends-requests");
+
+  if (response.data) {
+    response.data.map(
+      (info: any) =>
+        (info.avatar = info.avatar.replace("./", `${API_BASE_URL}/`))
+    );
+  }
+
+  console.log(response.data);
+  friendRequests.value = response.data;
+};
+const rejectRequest = (request: FridendsRequest) => {
+  console.log("Rejected:", request);
+  // 在这里处理拒绝好友请求的逻辑，例如调用API
+};
+
+const getFriendsList = async () => {
+  const response = await axios.get("/get-friends-list");
+
+  if (response.data) {
+    response.data.map(
+      (info: any) =>
+        (info.avatar = info.avatar.replace("./", `${API_BASE_URL}/`))
+    );
+  }
+
+  console.log(response.data);
+  friendsList.value = response.data;
+};
+
+const sendFriendMessages = (username: string) => {};
 
 onMounted(() => {
   loadPosts();
+  getFriendsRequests();
+  getFriendsList();
 });
 </script>
 

@@ -18,12 +18,15 @@
 
     <div class="flex justify-between items-center mb-4">
       <div class="flex items-center space-x-4">
-        <el-button link @click="likePost" class="text-gray-600 hover:text-blue-500">
+        <!-- <el-button link @click="likePost" class="text-gray-600 hover:text-blue-500">
           <el-icon :class="{ 'text-red-500': liked, 'text-gray-400': !liked }">
             <Pointer />
           </el-icon>
           <span>{{ likes }}</span>
-        </el-button>
+        </el-button> -->
+        <span class=" ml-2 text-sm text-gray-500">
+        {{formatDate(post.created_at)}}
+        </span>
       </div>
       <el-button  link type="primary"  @click="toggleComments">
         {{ showComments ? '折叠评论' : '展开评论' }}
@@ -54,7 +57,7 @@
 import { ref, onMounted} from 'vue';
 import axios from '@/axiosConfig';
 import { ElMessage } from 'element-plus';
-import { Pointer } from '@element-plus/icons-vue';
+// import { Pointer } from '@element-plus/icons-vue';
 import Comment from '@/components/Comment.vue';
 
 interface Comment {
@@ -70,7 +73,7 @@ interface Comment {
   children: Comment[];
 }
 
-const props = defineProps<{ post: { id: number; title: string; content: string; images?: string[]; likes: number; avatar: string; nickname: string } }>();
+const props = defineProps<{ post: { id: number; title: string; content: string; images?: string[]; likes: number; avatar: string; nickname: string ;created_at:string}; }>();
 
 const { post } = props;
 const likes = ref(post.likes);
@@ -146,6 +149,32 @@ const submitComment = async () => {
     ElMessage.success('评论成功');
   } catch (error) {
     ElMessage.error('提交评论失败，请重试');
+  }
+};
+
+const formatDate = (dateString:string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime(); // 差值以毫秒为单位
+
+  // 转换为秒、分钟、小时和天
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  // 根据差值返回相应的时间格式
+  if (seconds < 60) {
+    return `${seconds} 秒前`;
+  } else if (minutes < 60) {
+    return `${minutes} 分钟前`;
+  } else if (hours < 24) {
+    return `${hours} 小时前`;
+  } else if (days < 7) {
+    return `${days} 天前`;
+  } else {
+    // 直接返回格式化的日期时间
+    return date.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
   }
 };
 
