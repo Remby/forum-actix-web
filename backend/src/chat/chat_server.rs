@@ -61,6 +61,7 @@ pub struct JoinRoom {
 /// ChatServer 管理所有聊天室和用户会话
 pub struct ChatServer {
     sessions: HashMap<usize, Recipient<Message>>,
+    sessions_map: HashMap<String, usize>,
     rooms: HashMap<String, HashSet<usize>>,
     rng: ThreadRng,
     visitor_count: Arc<AtomicUsize>,
@@ -73,6 +74,7 @@ impl ChatServer {
 
         ChatServer {
             sessions: HashMap::new(),
+            sessions_map: HashMap::new(),
             rooms,
             rng: rand::thread_rng(),
             visitor_count,
@@ -92,20 +94,16 @@ impl ChatServer {
     }
     fn send_private_message(&self, to: &str, from: &str, message: &str) {
         // Find the recipient's id based on the username 'to'
-        let recipient_id = self.sessions.iter().find_map(|(&id, addr)| {
-            // Assuming you have a way to get the user's name from the address, implement that logic here.
-            // Example: if get_username_by_id(id) == to { Some(id) } else { None }
-            // However, the `Recipient` type does not directly support extracting the username,
-            // so you need to manage this mapping separately.
-            if
-            /* your logic to match username with addr */
-            false {
+        let recipient_id = self.sessions_map.iter()
+        .find_map(|(username, &id)| {
+            if *username==*to{
                 Some(id)
-            } else {
+            }
+            else {
                 None
             }
         });
-
+        println!("get to id {:#?}", recipient_id);
         if let Some(id) = recipient_id {
             if let Some(addr) = self.sessions.get(&id) {
                 let _ = addr.do_send(Message(format!(
@@ -126,7 +124,9 @@ impl Handler<Connect> for ChatServer {
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         let id = self.rng.gen::<usize>();
+        println!("generate rng {}", id);
         self.sessions.insert(id, msg.addr);
+        self.sessions_map.insert(msg.username, id);
         self.rooms.entry("main".to_owned()).or_default().insert(id);
 
         let count = self.visitor_count.fetch_add(1, Ordering::SeqCst);

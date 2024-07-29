@@ -210,6 +210,39 @@ async fn accept_friends_requests(
     }
 }
 
+#[post("/reject-friends-requests")]
+async fn reject_friends_requests(
+    session: Session,
+    pool: web::Data<PgPool>,
+    username: String,
+) -> Result<HttpResponse, Error> {
+    println!("accept request handler");
+
+    let receiver_id: i32;
+    match session.get("user_id")? {
+        Some(id) => receiver_id = id,
+        _ => return Err(actix_web::error::ErrorUnauthorized("No Auth")),
+    }
+
+    let result = sqlx::query!(
+        "
+        DELETE FROM friends_requests WHERE sender_id= 
+        (SELECT id FROM users WHERE username=$1) AND
+        receiver_id=$2;
+        ",
+        username,
+        receiver_id
+    )
+    .execute(pool.get_ref())
+    .await;
+
+    match result {
+        Ok(_) => Ok(HttpResponse::Ok().json(json!({"success":true}))),
+
+        _ => Ok(HttpResponse::Ok().json(json!({"success":false}))),
+    }
+}
+
 #[get("/get-friends-list")]
 async fn get_friends_list(
     session: Session,

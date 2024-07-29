@@ -1,53 +1,14 @@
 use actix::*;
 use actix_cors::Cors;
 use actix_files as fs;
-use actix_session::Session;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
-use actix_web::get;
-use actix_web::{cookie::Key, web, App, Error, HttpRequest, HttpResponse, HttpServer};
-use actix_web_actors::ws;
+use actix_web::{cookie::Key, web, App, HttpServer};
+use backend::chat::*;
+use backend::dbadmin::handlers::*;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
-use std::{
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
-    time::Instant,
-};
-
-use backend::chat::chat_server::ChatServer;
-use backend::chat::chat_session::WsChatSession;
-use backend::dbadmin::handlers::*;
-
-
-#[get("/ws")]
-async fn chat_route(
-    req: HttpRequest,
-    stream: web::Payload,
-    session: Session,
-    srv: web::Data<Addr<ChatServer>>,
-) -> Result<HttpResponse, Error> {
-    match session.get::<i32>("user_id")? {
-        Some(id)=>println!("{}",id),
-        _=>{}
-        
-    }
-    println!("chat route connect! ");
-    let username = req.query_string().to_string();
-    ws::start(
-        WsChatSession {
-            id: 0,
-            hb: Instant::now(),
-            room: "main".to_owned(),
-            name: Some(username),
-            addr: srv.get_ref().clone(),
-        },
-        &req,
-        stream,
-    )
-}
+use std::sync::{atomic::AtomicUsize, Arc};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -107,6 +68,7 @@ async fn main() -> std::io::Result<()> {
             .service(add_users)
             .service(get_friends_requests)
             .service(accept_friends_requests)
+            .service(reject_friends_requests)
             .service(get_friends_list)
     })
     .bind("127.0.0.1:8080")?

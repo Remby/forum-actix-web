@@ -13,6 +13,7 @@ pub struct WsChatSession {
     pub hb: Instant,
     pub room: String,
     pub name: Option<String>,
+    pub to_name:Option<String>,
     pub addr: Addr<ChatServer>,
 }
 
@@ -36,6 +37,7 @@ impl Actor for WsChatSession {
     type Context = ws::WebsocketContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        println!("session actor started!");
         self.hb(ctx);
         let addr = ctx.address();
         self.addr
@@ -56,6 +58,7 @@ impl Actor for WsChatSession {
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
         self.addr.do_send(Disconnect { id: self.id });
+        println!("session actor stoped !");
         Running::Stop
     }
 }
@@ -64,6 +67,7 @@ impl Handler<Message> for WsChatSession {
     type Result = ();
 
     fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
+        println!("send session message!");
         ctx.text(msg.0);
     }
 }
@@ -130,10 +134,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     } else {
                         text.to_string()
                     };
-                    self.addr.do_send(GroupMessage {
-                        id: self.id,
-                        room: self.room.clone(),
-                        content: msg,
+                    // self.addr.do_send(GroupMessage {
+                    //     id: self.id,
+                    //     room: self.room.clone(),
+                    //     content: msg,
+                    // });
+                    self.addr.do_send(PrivateMessage{
+                        from:self.name.as_ref().unwrap().clone(),
+                        to:self.to_name.as_ref().unwrap().clone(),
+                        content: msg.clone()
                     });
                 }
             }

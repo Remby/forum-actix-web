@@ -168,9 +168,9 @@
 
         <!-- 好友申请列表 -->
         <el-collapse>
-          <el-collapse-item >
+          <el-collapse-item>
             <template #title>
-            <el-icon class=" mx-3"><InfoFilled /></el-icon>好友申请列表
+              <el-icon class="mx-3"><InfoFilled /></el-icon>好友申请列表
             </template>
             <ul>
               <li
@@ -247,6 +247,20 @@
               </li>
             </ul>
           </el-collapse-item>
+
+          <!-- 多个聊天小窗口组件 -->
+          <div v-for="(chat, index) in openChats" :key="index">
+            <ChatWindow
+              :isOpen="true"
+              :chatWith="chat.username"
+              :chatId="index"
+              :initialX="0"
+              :initialY="0"
+              :initialWidth="parentWidth"
+              @close="closeChatWindow"
+            />
+          </div>
+
           <el-collapse-item title="群组" name="groups">
             <ul>
               <li class="mb-4 flex items-center">
@@ -278,7 +292,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import {
   ElButton,
   ElInput,
@@ -307,6 +321,7 @@ import FriendsView from "@/components/FriendsView.vue";
 import AppsView from "@/components/AppsView.vue";
 import SettingsView from "@/components/SettingsView.vue";
 import CreatePost from "@/components/CreatePost.vue";
+import ChatWindow from "@/components/ChatWindow.vue"; // 引入聊天小窗口组件
 import axios, { API_BASE_URL } from "@/axiosConfig";
 import { h } from "vue";
 interface Post {
@@ -318,7 +333,7 @@ interface Post {
   content: string;
   images?: string[];
   likes: number;
-  created_at:string;
+  created_at: string;
 }
 
 interface FridendsRequest {
@@ -473,9 +488,17 @@ const getFriendsRequests = async () => {
   console.log(response.data);
   friendRequests.value = response.data;
 };
-const rejectRequest = (request: FridendsRequest) => {
-  console.log("Rejected:", request);
-  // 在这里处理拒绝好友请求的逻辑，例如调用API
+const rejectRequest = async (request: FridendsRequest) => {
+  const response = await axios.post(
+    "/reject-friends-requests",
+    request.username
+  );
+  console.log(response.data);
+  if (response.data.success) {
+    friendRequests.value = friendRequests.value.filter(
+      (req) => req.username !== request.username
+    );
+  }
 };
 
 const getFriendsList = async () => {
@@ -492,12 +515,40 @@ const getFriendsList = async () => {
   friendsList.value = response.data;
 };
 
-const sendFriendMessages = (username: string) => {};
+interface ChatInfo {
+  username: string;
+}
+const openChats = ref<ChatInfo[]>([]);
+
+const sendFriendMessages = (username: string) => {
+  if (!openChats.value.some((chat) => chat.username === username)) {
+    openChats.value.push({ username });
+  }
+};
+
+const closeChatWindow = (index: number) => {
+  openChats.value.splice(index, 1);
+};
+
+const parentWidth = ref(250); // Default width
+const parentContainer = ref<HTMLElement | null>(null);
+
+const updateParentWidth = () => {
+  if (parentContainer.value) {
+    parentWidth.value = parentContainer.value.offsetWidth;
+  }
+};
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateParentWidth);
+});
 
 onMounted(() => {
   loadPosts();
   getFriendsRequests();
   getFriendsList();
+  updateParentWidth();
+  window.addEventListener("resize", updateParentWidth);
 });
 </script>
 
